@@ -24,6 +24,12 @@ jobs:
       - run: npm install
       - run: npx cap add android
       - run: npx cap sync android
+      - name: Allow cleartext HTTP (BXH test qua http)
+        run: |
+          M=android/app/src/main/AndroidManifest.xml
+          grep -q usesCleartextTraffic "$M" || sed -i 's|<application|<application android:usesCleartextTraffic="true"|' "$M"
+          sed -i 's| android:networkSecurityConfig="[^"]*"||' "$M"
+          echo "--- application tag ---"; grep -n "application" "$M" | head
       - working-directory: android
         run: |
           chmod +x gradlew

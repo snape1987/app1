@@ -6,3 +6,4 @@ ios/
 .venv/
 __pycache__/
 *.db
+tester/shots/
