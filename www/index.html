@@ -224,7 +224,7 @@ function load(){try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&s.status
 function save(){try{localStorage.setItem(KEY,JSON.stringify(meta));}catch(e){}}
 
 /* ---------------- ONLINE LEADERBOARD (fallback về mock khi offline) ---------------- */
-const API_BASE=''; /* vd 'http://VPS_IP:8000' — để trống = chạy offline dùng dữ liệu mẫu */
+const API_BASE='http://157.230.45.241:8010'; /* BXH online thật; để trống = offline dùng dữ liệu mẫu */
 const DEVKEY='gobston.device';
 function deviceId(){let d=localStorage.getItem(DEVKEY);if(!d){d='g'+Math.random().toString(36).slice(2)+Date.now().toString(36);localStorage.setItem(DEVKEY,d);}return d;}
 function tierOf(b){return b>=5?'t-diamond':b>=4?'t-platinum':b>=3?'t-silver':'';}
