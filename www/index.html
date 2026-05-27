@@ -223,6 +223,18 @@ let meta=load();
 function load(){try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&s.statusFull!=null)return Object.assign(DEF(),s);}catch(e){}return DEF();}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(meta));}catch(e){}}
 
+/* ---------------- ONLINE LEADERBOARD (fallback về mock khi offline) ---------------- */
+const API_BASE=''; /* vd 'http://VPS_IP:8000' — để trống = chạy offline dùng dữ liệu mẫu */
+const DEVKEY='gobston.device';
+function deviceId(){let d=localStorage.getItem(DEVKEY);if(!d){d='g'+Math.random().toString(36).slice(2)+Date.now().toString(36);localStorage.setItem(DEVKEY,d);}return d;}
+function tierOf(b){return b>=5?'t-diamond':b>=4?'t-platinum':b>=3?'t-silver':'';}
+function submitScore(){if(!API_BASE)return;try{fetch(API_BASE+'/score',{method:'POST',headers:{'Content-Type':'application/json'},
+  body:JSON.stringify({device_id:deviceId(),name:meta.name,status_full:meta.statusFull,status_rev:meta.statusRev,
+    wins:meta.wins,best_round:meta.bestRound,plays:meta.plays,region:'VN'})}).catch(()=>{});}catch(e){}}
+async function fetchBoard(scope){if(!API_BASE)return null;try{
+  const r=await fetch(API_BASE+'/leaderboard?scope='+scope+'&limit='+(scope==='region'?10:100));
+  if(!r.ok)return null;const j=await r.json();return Array.isArray(j.entries)?j.entries:null;}catch(e){return null;}}
+
 const STATUS_PRESETS=["Tomorrow never die","Bố mày là số 1","King of Gobston","Vô đối thiên hạ",
   "Huyền thoại sống","Không ai bằng ta","Đỉnh của chóp","Bất bại","Chúa tể bàn đấu","Ta là nhất"];
 function statusDisplay(full,rev){let s="";for(let i=0;i<full.length;i++)s+=i<rev?full[i]:(full[i]===' '?' ':'·');return s;}
@@ -305,12 +317,15 @@ $('saveStatus').onclick=()=>{
 };
 
 /* ---------------- LEADERBOARD ---------------- */
-function renderLB(){
+async function renderLB(){
   const tier=myTier();
   $('lbYou').innerHTML=`<div class="e you"><span class="rk">—</span><span class="nm ${tier}">${meta.name}</span>`+
     `<span class="st ${tier}">${meta.statusRev>0?statusDisplay(meta.statusFull,meta.statusRev):'(chưa khắc)'}</span></div>`;
-  $('lbWorld').innerHTML=worldData.map((e,i)=>`<div class="e"><span class="rk">#${i+1}</span><span class="nm ${e.tier}">${e.nm}</span><span class="st ${e.tier}">${statusDisplay(e.full,e.rev)}</span></div>`).join('');
-  $('lbRegion').innerHTML=regionData.map((e,i)=>`<div class="e"><span class="rk">#${i+1}</span><span class="nm ${e.tier}">${e.nm}</span><span class="st ${e.tier}">${statusDisplay(e.full,e.rev)}</span></div>`).join('');
+  const rowHTML=(e,i)=>{const tr=e.tier||tierOf(e.best||0);
+    return `<div class="e"><span class="rk">#${i+1}</span><span class="nm ${tr}">${e.nm}</span><span class="st ${tr}">${statusDisplay(e.full,e.rev)}</span></div>`;};
+  const world=await fetchBoard('world'), region=await fetchBoard('region');
+  $('lbWorld').innerHTML=(world||worldData).map(rowHTML).join('');
+  $('lbRegion').innerHTML=(region||regionData).map(rowHTML).join('');
 }
 
 /* ---------------- RESULT ---------------- */
@@ -324,7 +339,7 @@ function applyResult(won,r){
     if(r>=3 && meta.statusRev<meta.statusFull.length){meta.statusRev++;letter=true;}
     reward={ticket:r+1,letter};
   }
-  save(); return reward;
+  save(); submitScore(); return reward;
 }
 function showResult(won,rank,r,reward){
   $('rTitle').textContent = won?'VÔ ĐỊCH':`HẠNG ${rank}/9`;

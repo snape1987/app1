@@ -3,3 +3,6 @@ android/
 ios/
 *.apk
 .DS_Store
+.venv/
+__pycache__/
+*.db
