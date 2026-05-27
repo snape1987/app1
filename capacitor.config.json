@@ -1,6 +1,6 @@
 {
   "appId": "com.app1.app",
-  "appName": "App1",
+  "appName": "Gobston",
   "webDir": "www",
   "android": { "allowMixedContent": true }
 }

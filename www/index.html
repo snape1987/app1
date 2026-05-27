@@ -1,12 +1,548 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>App1</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<title>Gobston — Mày Có Biết Bố Mày Là Ai Không?</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  :root{--gold:#f0c468;--gold2:#e8a13a;--bg:#0b0a08;--card:rgba(28,22,14,.82);--line:rgba(240,196,104,.22);}
+  html,body{height:100%;background:var(--bg);color:#f0e7d6;overflow:hidden;
+    font-family:-apple-system,"Segoe UI",system-ui,sans-serif;touch-action:none;user-select:none;}
+  #app{position:fixed;inset:0;overflow:hidden;}
+  .screen{position:absolute;inset:0;display:none;flex-direction:column;}
+  .screen.active{display:flex;}
+  .scroll{flex:1;overflow-y:auto;padding:14px;-webkit-overflow-scrolling:touch;}
+  .pad{padding:14px;}
+
+  .topbar{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line);}
+  .topbar h1{font-size:15px;letter-spacing:.5px;color:var(--gold);font-weight:800;}
+  .back{background:none;border:1px solid #555;color:#ddd;border-radius:9px;padding:6px 11px;font-weight:700;cursor:pointer;font-size:13px;}
+  .spacer{flex:1;}
+
+  .btn{display:block;width:100%;padding:15px;border:none;border-radius:16px;font-size:16px;font-weight:800;letter-spacing:.5px;
+    cursor:pointer;color:#1c140a;background:linear-gradient(90deg,var(--gold),#7dffa6);box-shadow:0 8px 22px rgba(0,0,0,.4);margin-top:10px;}
+  .btn:active{transform:scale(.98);}
+  .btn.sec{background:linear-gradient(90deg,#5a4a30,#7a6440);color:#ffe9c0;}
+  .btn.gold{background:linear-gradient(90deg,var(--gold),var(--gold2));}
+  .btn:disabled{filter:grayscale(.8);opacity:.5;}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;}
+  .muted{opacity:.6;font-size:12px;}
+
+  /* HOME */
+  #home .hero{display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;margin-bottom:6px;}
+  .marble{width:78px;height:78px;border-radius:50%;
+    background:radial-gradient(circle at 34% 30%,#bfe6ff,#3aa0e0 55%,#1d5fa0);
+    box-shadow:0 8px 20px rgba(0,0,0,.5),inset 0 0 14px rgba(255,255,255,.3);}
+  .gname{font-size:20px;font-weight:800;}
+  .gtitle{font-size:11px;opacity:.55;letter-spacing:2px;}
+  .statusBig{font-size:17px;font-weight:800;min-height:22px;letter-spacing:1px;}
+  .stats{display:flex;justify-content:space-around;margin-top:12px;}
+  .stat{text-align:center;}
+  .stat b{font-size:22px;display:block;color:var(--gold);}
+  .stat span{font-size:10px;opacity:.6;letter-spacing:1px;}
+  .tickets{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;justify-content:center;}
+  .tk{background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:11px;padding:7px 11px;font-size:12px;font-weight:700;}
+  .tk b{color:#7dffa6;}
+
+  /* tier effects */
+  .t-diamond{background:linear-gradient(90deg,#b9f2ff,#fff,#7cc8ff,#e7c3ff,#b9f2ff);background-size:220% auto;
+    -webkit-background-clip:text;background-clip:text;color:transparent;animation:shine 2.4s linear infinite;
+    filter:drop-shadow(0 0 4px rgba(150,230,255,.7));}
+  .t-platinum{background:linear-gradient(90deg,#e6eaf2,#fff,#c6d0e0,#fff,#e6eaf2);background-size:220% auto;
+    -webkit-background-clip:text;background-clip:text;color:transparent;animation:shine 3.2s linear infinite;}
+  .t-silver{color:#c9ced8;text-shadow:0 1px 1px #000,0 0 6px rgba(180,190,205,.4);}
+  @keyframes shine{to{background-position:220% center;}}
+
+  /* ROUND picker */
+  .roundItem{display:flex;align-items:center;gap:12px;padding:14px;border:1px solid var(--line);border-radius:16px;margin-top:10px;
+    background:rgba(255,255,255,.03);cursor:pointer;}
+  .roundItem.locked{opacity:.45;}
+  .roundItem .rn{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;font-weight:900;font-size:20px;
+    background:linear-gradient(135deg,var(--gold),var(--gold2));color:#1c140a;flex:0 0 auto;}
+  .roundItem .info{flex:1;}
+  .roundItem .info b{font-size:15px;}
+  .roundItem .info div{font-size:11px;opacity:.65;}
+  .roundItem .go{font-size:12px;font-weight:800;color:#7dffa6;}
+  .roundItem.locked .go{color:#ff8a8a;}
+
+  /* STATUS screen */
+  .preset{padding:12px;border:1px solid var(--line);border-radius:13px;margin-top:8px;font-weight:700;cursor:pointer;background:rgba(255,255,255,.03);}
+  .preset.cur{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset;}
+  #customInput{width:100%;padding:12px;border-radius:12px;border:1px solid var(--line);background:rgba(0,0,0,.3);color:#fff;font-size:15px;font-weight:700;margin-top:8px;}
+  .slots{font-size:20px;font-weight:800;letter-spacing:3px;margin:10px 0;min-height:26px;}
+
+  /* LEADERBOARD */
+  .lbcol h3{font-size:11px;letter-spacing:1px;opacity:.7;margin:14px 0 6px;}
+  .e{display:flex;align-items:center;gap:8px;padding:6px 2px;font-size:13px;border-bottom:1px solid rgba(255,255,255,.05);}
+  .e.you{background:rgba(125,255,158,.08);border-radius:8px;padding:6px;}
+  .rk{width:30px;font-weight:800;opacity:.7;flex:0 0 auto;}
+  .e .nm{font-weight:700;flex:0 0 auto;max-width:90px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .e .st{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12px;}
+
+  /* RESULT */
+  #result .rcard{margin-top:30px;text-align:center;}
+  #rTitle{font-size:34px;font-weight:900;letter-spacing:2px;
+    background:linear-gradient(90deg,var(--gold),#ffe9b0,var(--gold2));-webkit-background-clip:text;background-clip:text;color:transparent;}
+  #rSub{margin-top:10px;font-size:14px;opacity:.85;line-height:1.5;}
+  .reward{margin-top:14px;padding:12px;border:1px dashed var(--gold);border-radius:14px;color:#ffe9b0;font-weight:700;}
+
+  /* GAME */
+  #game{align-items:center;justify-content:center;background:#0b0a08;}
+  #gwrap{position:relative;}
+  canvas{display:block;}
+  #ghud{position:absolute;top:8px;left:50%;transform:translateX(-50%);display:flex;gap:14px;pointer-events:none;
+    font-variant-numeric:tabular-nums;font-weight:700;text-shadow:0 2px 6px #000;}
+  #ghud .box{display:flex;flex-direction:column;align-items:center;line-height:1.05;}
+  #ghud .lbl{font-size:9px;opacity:.55;letter-spacing:1.5px;}
+  #ghud .val{font-size:18px;}
+  #timeV{color:var(--gold);}#aliveV{color:#7dffa6;}#roundHV{color:#ff9bd0;}
+  #roster{position:absolute;top:8px;right:8px;z-index:6;width:160px;max-width:42vw;background:rgba(20,16,10,.8);
+    border:1px solid var(--line);border-radius:12px;padding:8px;backdrop-filter:blur(4px);font-size:11px;}
+  #roster h4{font-size:9px;letter-spacing:1.5px;opacity:.6;margin-bottom:6px;}
+  #roster .row{display:flex;align-items:center;gap:6px;padding:3px 0;border-bottom:1px solid rgba(255,255,255,.04);}
+  #roster .dot{width:9px;height:9px;border-radius:50%;flex:0 0 auto;}
+  #roster .nm{font-weight:700;flex:0 0 auto;max-width:44px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  #roster .st{font-size:10px;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;}
+  #roster .row.out{opacity:.38;}#roster .row.out .nm,#roster .row.out .st{text-decoration:line-through;}
+  #roster .pl{font-size:9px;opacity:.6;margin-left:auto;}
+  #cancelBtn{position:absolute;left:14px;bottom:18px;z-index:7;width:80px;height:80px;border-radius:50%;display:none;place-items:center;
+    cursor:pointer;font-weight:900;font-size:13px;color:#3a2410;border:3px solid #b9842f;
+    background:radial-gradient(circle at 35% 30%,#ffe6a8,var(--gold2) 60%,#a9701f);box-shadow:0 6px 18px rgba(0,0,0,.5);}
+  #cancelBtn.show{display:grid;}
+  #cancelBtn.hot{background:radial-gradient(circle at 35% 30%,#ffd0d0,#e8483a 60%,#a91f1f);border-color:#ff6b6b;color:#fff;transform:scale(1.1);}
+  #quitBtn{position:absolute;right:14px;bottom:18px;z-index:7;background:rgba(0,0,0,.4);border:1px solid #555;color:#ddd;
+    border-radius:10px;padding:8px 12px;font-weight:700;font-size:12px;cursor:pointer;}
+</style>
 </head>
 <body>
-  <h1>App1</h1>
-  <p>Big project bắt đầu từ đây.</p>
+<div id="app">
+
+  <!-- HOME -->
+  <div class="screen active" id="home">
+    <div class="topbar"><h1>GOBSTON</h1><div class="spacer"></div><span class="muted">Mày có biết Bố mày là ai không?</span></div>
+    <div class="scroll">
+      <div class="card hero">
+        <div class="marble"></div>
+        <div class="gtitle">DANH HIỆU</div>
+        <div class="statusBig" id="homeStatus">—</div>
+        <div class="gname" id="homeName">Bạn</div>
+        <div class="stats">
+          <div class="stat"><b id="sWins">0</b><span>THẮNG</span></div>
+          <div class="stat"><b id="sBest">1</b><span>ROUND CAO NHẤT</span></div>
+          <div class="stat"><b id="sPlays">0</b><span>TRẬN</span></div>
+        </div>
+        <div class="tickets" id="ticketRow"></div>
+      </div>
+      <button class="btn" id="playBtn">CHƠI</button>
+      <button class="btn sec" id="statusBtn">KHẮC DANH HIỆU</button>
+      <button class="btn sec" id="lbBtn">🏆 BẢNG XẾP HẠNG</button>
+      <button class="btn sec" id="renameBtn">ĐỔI TÊN</button>
+      <p class="muted" style="text-align:center;margin-top:14px">Bản test: đấu với 8 bot, tiến trình lưu trên máy.<br>Online thật + BXH toàn cầu sẽ thêm khi có server.</p>
+    </div>
+  </div>
+
+  <!-- ROUND PICKER -->
+  <div class="screen" id="round">
+    <div class="topbar"><button class="back" data-back="home">‹ Về</button><h1>CHỌN ROUND</h1></div>
+    <div class="scroll">
+      <p class="muted">Round càng sâu càng nhiều hố & càng đẳng cấp. Thắng Round N → nhận <b>vé vào Round N+1</b>. Thắng từ Round 3 → <b>khắc thêm 1 chữ</b> vào danh hiệu.</p>
+      <div id="roundList"></div>
+    </div>
+  </div>
+
+  <!-- STATUS -->
+  <div class="screen" id="status">
+    <div class="topbar"><button class="back" data-back="home">‹ Về</button><h1>KHẮC DANH HIỆU</h1></div>
+    <div class="scroll">
+      <p class="muted">Mỗi lần thắng từ Round 3 mở thêm 1 chữ cái. Đổi sang câu dài hơn (≤20) thì các ô chưa khắc để trống.</p>
+      <div class="card">
+        <div class="muted">ĐANG KHẮC TỚI:</div>
+        <div class="slots" id="slotPreview">—</div>
+        <div class="muted" id="slotInfo"></div>
+      </div>
+      <h3 class="muted" style="margin-top:14px">CHỌN CÂU:</h3>
+      <div id="presetList"></div>
+      <input id="customInput" maxlength="20" placeholder="Hoặc gõ câu của bạn (tối đa 20)" />
+      <button class="btn gold" id="saveStatus">LƯU DANH HIỆU</button>
+    </div>
+  </div>
+
+  <!-- LEADERBOARD -->
+  <div class="screen" id="leaderboard">
+    <div class="topbar"><button class="back" data-back="home">‹ Về</button><h1>🏆 XẾP HẠNG</h1></div>
+    <div class="scroll">
+      <p class="muted">★ Dữ liệu mẫu (trừ dòng của bạn). Top10 TG <span class="t-diamond">Kim cương</span>, Top100 <span class="t-platinum">Bạch kim</span>, Top10 khu vực <span class="t-silver">Bạc</span>.</p>
+      <div class="lbcol"><h3>BẠN</h3><div id="lbYou"></div></div>
+      <div class="lbcol"><h3>🌍 TOP 100 THẾ GIỚI</h3><div id="lbWorld"></div></div>
+      <div class="lbcol"><h3>📍 TOP 10 KHU VỰC (VN)</h3><div id="lbRegion"></div></div>
+    </div>
+  </div>
+
+  <!-- RESULT -->
+  <div class="screen" id="result">
+    <div class="scroll">
+      <div class="rcard">
+        <div id="rTitle">—</div>
+        <div id="rSub"></div>
+        <div class="reward" id="rReward" style="display:none"></div>
+      </div>
+      <button class="btn" id="rHome">VỀ TRANG CHỦ</button>
+      <button class="btn sec" id="rAgain">CHƠI LẠI ROUND NÀY</button>
+    </div>
+  </div>
+
+  <!-- GAME -->
+  <div class="screen" id="game">
+    <div id="gwrap">
+      <canvas id="cv"></canvas>
+      <div id="ghud">
+        <div class="box"><span class="lbl">GIÂY</span><span class="val" id="timeV">0.0</span></div>
+        <div class="box"><span class="lbl">CÒN SỐNG</span><span class="val" id="aliveV">9</span></div>
+        <div class="box"><span class="lbl">ROUND</span><span class="val" id="roundHV">1</span></div>
+      </div>
+      <div id="roster"><h4>BÀN ĐẤU — 9 NGƯỜI</h4><div id="rosterList"></div></div>
+      <div id="cancelBtn">CANCEL</div>
+      <button id="quitBtn">Thoát</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+"use strict";
+/* =========================================================================
+   GOBSTON — unified app (meta local-first + game). Single file, no build.
+   ========================================================================= */
+
+/* ---------------- META STORE (localStorage) ---------------- */
+const KEY='gobston.save.v1';
+const DEF=()=>({name:'Bạn',statusFull:'Tomorrow never die',statusRev:0,wins:0,plays:0,bestRound:1,tickets:{}});
+let meta=load();
+function load(){try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&s.statusFull!=null)return Object.assign(DEF(),s);}catch(e){}return DEF();}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(meta));}catch(e){}}
+
+const STATUS_PRESETS=["Tomorrow never die","Bố mày là số 1","King of Gobston","Vô đối thiên hạ",
+  "Huyền thoại sống","Không ai bằng ta","Đỉnh của chóp","Bất bại","Chúa tể bàn đấu","Ta là nhất"];
+function statusDisplay(full,rev){let s="";for(let i=0;i<full.length;i++)s+=i<rev?full[i]:(full[i]===' '?' ':'·');return s;}
+function myTier(){const b=meta.bestRound;return b>=5?'t-diamond':b>=4?'t-platinum':b>=3?'t-silver':'';}
+
+/* ---------------- MOCK LEADERBOARD ---------------- */
+const NAMES=["BốMàyĐây","SóiCôĐơn","HuyềnThoại","KingPin","RồngĐen","Vô_Đối","TháiTửGob","MưaĐêm","ÔngTrùm","BăngHà",
+ "LụcBảo","HắcĐế","ThầnTốc","KỳLân","BạchHổ","PhongVân","TiaChớp","ĐộcCô","MãnhSư","HỏaLong","ThiênĐịa","CuồngPhong",
+ "HảiVương","NhấtKiếm","VôẢnh","CựuVương","BấtBại","MệnhĐế"];
+const pick=a=>a[(Math.random()*a.length)|0];
+const worldData=[],regionData=[];
+for(let i=0;i<100;i++){const f=pick(STATUS_PRESETS);
+  worldData.push({nm:NAMES[i%NAMES.length]+(i>=NAMES.length?('_'+((i/NAMES.length)|0)):''),
+    full:f,rev:i<10?f.length:(3+((Math.random()*(f.length-3))|0)),tier:i<10?'t-diamond':'t-platinum'});}
+for(let i=0;i<10;i++){const f=pick(STATUS_PRESETS);regionData.push({nm:NAMES[(i+5)%NAMES.length]+"_VN",full:f,rev:4+((Math.random()*5)|0),tier:'t-silver'});}
+
+/* ---------------- SCREEN ROUTER ---------------- */
+const $=id=>document.getElementById(id);
+function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('active',s.id===id));
+  if(id==='home')renderHome(); if(id==='round')renderRound(); if(id==='status')renderStatus();
+  if(id==='leaderboard')renderLB(); gameActive=(id==='game');}
+document.querySelectorAll('[data-back]').forEach(b=>b.onclick=()=>show(b.dataset.back));
+
+/* ---------------- HOME ---------------- */
+function renderHome(){
+  const tier=myTier();
+  const st=$('homeStatus'); st.textContent=meta.statusRev>0?statusDisplay(meta.statusFull,meta.statusRev):'(chưa khắc)';
+  st.className='statusBig '+tier;
+  $('homeName').textContent=meta.name;
+  $('sWins').textContent=meta.wins; $('sBest').textContent=meta.bestRound; $('sPlays').textContent=meta.plays;
+  const row=$('ticketRow'); let html='<div class="tk">Round 1 <b>∞</b></div>';
+  for(let r=2;r<=Math.max(4,meta.bestRound+1);r++){html+=`<div class="tk">Round ${r} <b>${meta.tickets[r]||0}</b></div>`;}
+  row.innerHTML=html;
+}
+$('playBtn').onclick=()=>show('round');
+$('statusBtn').onclick=()=>show('status');
+$('lbBtn').onclick=()=>show('leaderboard');
+$('renameBtn').onclick=()=>{const n=prompt('Tên của bạn:',meta.name);if(n&&n.trim()){meta.name=n.trim().slice(0,16);save();renderHome();}};
+
+/* ---------------- ROUND PICKER ---------------- */
+function renderRound(){
+  const list=$('roundList'); let html='';
+  const maxR=Math.max(4,meta.bestRound+1);
+  for(let r=1;r<=maxR;r++){
+    const unlocked = r===1 || (meta.tickets[r]||0)>0;
+    const tk = r===1?'Luôn mở':`Vé: ${meta.tickets[r]||0}`;
+    html+=`<div class="roundItem ${unlocked?'':'locked'}" data-r="${r}">
+      <div class="rn">${r}</div>
+      <div class="info"><b>ROUND ${r}</b><div>${r} hố đen · ${tk}</div></div>
+      <div class="go">${unlocked?'CHƠI ›':'CẦN VÉ'}</div></div>`;
+  }
+  list.innerHTML=html;
+  list.querySelectorAll('.roundItem').forEach(it=>{
+    const r=+it.dataset.r;
+    if(it.classList.contains('locked'))return;
+    it.onclick=()=>enterMatch(r);
+  });
+}
+
+/* ---------------- STATUS ---------------- */
+let pendingStatus=null;
+function renderStatus(){
+  pendingStatus=meta.statusFull;
+  $('slotPreview').textContent=statusDisplay(meta.statusFull,meta.statusRev);
+  $('slotPreview').className='slots '+myTier();
+  $('slotInfo').textContent=`Đã khắc ${meta.statusRev}/${meta.statusFull.length} ký tự.`;
+  const pl=$('presetList');
+  pl.innerHTML=STATUS_PRESETS.map(s=>`<div class="preset ${s===meta.statusFull?'cur':''}" data-s="${s}">${s}</div>`).join('');
+  pl.querySelectorAll('.preset').forEach(p=>p.onclick=()=>{pendingStatus=p.dataset.s;$('customInput').value='';
+    pl.querySelectorAll('.preset').forEach(x=>x.classList.toggle('cur',x===p));});
+  $('customInput').value='';
+}
+$('customInput').addEventListener('input',e=>{pendingStatus=e.target.value;
+  document.querySelectorAll('#presetList .preset').forEach(x=>x.classList.remove('cur'));});
+$('saveStatus').onclick=()=>{
+  let s=(pendingStatus||'').trim().slice(0,20);
+  if(!s){alert('Câu trống.');return;}
+  meta.statusFull=s; if(meta.statusRev>s.length)meta.statusRev=s.length;
+  save(); show('home');
+};
+
+/* ---------------- LEADERBOARD ---------------- */
+function renderLB(){
+  const tier=myTier();
+  $('lbYou').innerHTML=`<div class="e you"><span class="rk">—</span><span class="nm ${tier}">${meta.name}</span>`+
+    `<span class="st ${tier}">${meta.statusRev>0?statusDisplay(meta.statusFull,meta.statusRev):'(chưa khắc)'}</span></div>`;
+  $('lbWorld').innerHTML=worldData.map((e,i)=>`<div class="e"><span class="rk">#${i+1}</span><span class="nm ${e.tier}">${e.nm}</span><span class="st ${e.tier}">${statusDisplay(e.full,e.rev)}</span></div>`).join('');
+  $('lbRegion').innerHTML=regionData.map((e,i)=>`<div class="e"><span class="rk">#${i+1}</span><span class="nm ${e.tier}">${e.nm}</span><span class="st ${e.tier}">${statusDisplay(e.full,e.rev)}</span></div>`).join('');
+}
+
+/* ---------------- RESULT ---------------- */
+function applyResult(won,r){
+  meta.plays++;
+  let reward=null;
+  if(won){
+    meta.wins++; meta.bestRound=Math.max(meta.bestRound,r);
+    meta.tickets[r+1]=(meta.tickets[r+1]||0)+1;
+    let letter=false;
+    if(r>=3 && meta.statusRev<meta.statusFull.length){meta.statusRev++;letter=true;}
+    reward={ticket:r+1,letter};
+  }
+  save(); return reward;
+}
+function showResult(won,rank,r,reward){
+  $('rTitle').textContent = won?'VÔ ĐỊCH':`HẠNG ${rank}/9`;
+  $('rSub').innerHTML = won
+    ? `Bạn là viên bi cuối cùng sống sót ở <b>Round ${r}</b>!`
+    : `Bạn trụ tới hạng ${rank} ở Round ${r}. Cố lên!`;
+  const rw=$('rReward');
+  if(reward){let t=`🎟️ Nhận <b>vé vào Round ${reward.ticket}</b>`;
+    if(reward.letter)t+=`<br>✒️ Khắc thêm 1 chữ: <span class="${myTier()}">${statusDisplay(meta.statusFull,meta.statusRev)}</span>`;
+    rw.innerHTML=t; rw.style.display='block';
+  } else rw.style.display='none';
+  $('rAgain').onclick=()=>enterMatch(r);
+  show('result');
+}
+$('rHome').onclick=()=>show('home');
+
+/* =========================================================================
+   GAME (canvas) — Gobston showdown vs 8 bots
+   ========================================================================= */
+const CFG={N:9,W:720,ARENA_R:320,PLAYER_R:8,BALL_R:6,MAX_PULL:160,LAUNCH_MAX:660,
+  ROLL_FRICTION:0.94,STOP_EPS:14,COOLDOWN:2.0,WALL_BOUNCE:0.66,KNOCK_E:0.9,PREDICT_LEN:340,
+  BALL_SPD_INIT:205,BALL_SPD_STEP:1.15,BALL_SPD_CAP:1500,SPEEDUP_EVERY:5,BALL2_AT:30,BALL3_AT:60,
+  HOLE_R:30,HOLE_CAPTURE:18,BALL_HOLE_RESPAWN:2.0,COUNTDOWN:3,DEATH_FREEZE:0.7};
+const cv=$('cv'),ctx=cv.getContext('2d');const W=CFG.W,CX=W/2,CY=W/2;let dpr=1;
+function fit(){dpr=Math.min(window.devicePixelRatio||1,2);cv.width=W*dpr;cv.height=W*dpr;
+  const px=Math.min(window.innerWidth,window.innerHeight)-6;cv.style.width=px+'px';cv.style.height=px+'px';
+  $('gwrap').style.width=px+'px';$('gwrap').style.height=px+'px';ctx.setTransform(dpr,0,0,dpr,0,0);}
+window.addEventListener('resize',()=>{if(gameActive)fit();});
+
+const rand=(a,b)=>a+Math.random()*(b-a),clamp=(v,a,b)=>v<a?a:v>b?b:v,len=(x,y)=>Math.hypot(x,y),dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+let players=[],balls=[],holes=[],particles=[],floats=[];
+let phase='menu',t=0,cdT=0,deathT=0,curRound=1,gameActive=false;
+let nextSpeedup=CFG.SPEEDUP_EVERY,ball2=false,ball3=false;
+let me=null,toastTxt='',toastT=0,toastCol='#fff';
+let aiming=false,aimStart={x:0,y:0},aimCur={x:0,y:0};
+function toast(s,c){toastTxt=s;toastCol=c||'#fff';toastT=0.9;}
+const countAlive=()=>players.reduce((n,p)=>n+(p.alive?1:0),0);
+
+function makeRoster(){
+  const tiers=['','t-platinum','','t-diamond','','t-silver','','t-platinum','t-silver'];
+  for(let i=0;i<players.length;i++){const p=players[i];
+    p.name=i===0?meta.name:NAMES[(i*3+2)%NAMES.length];
+    p.tier=i===0?myTier():tiers[i%tiers.length];
+    p.statusFull=i===0?meta.statusFull:pick(STATUS_PRESETS);
+    p.statusRev=i===0?meta.statusRev:(3+((Math.random()*5)|0));}
+}
+function renderRoster(){
+  $('rosterList').innerHTML=players.map(p=>{const out=p.alive?'':'out',pl=p.alive?'':('#'+p.rank);
+    return `<div class="row ${out}"><span class="dot" style="background:hsl(${p.hue},85%,58%)"></span>`+
+      `<span class="nm ${p.tier}">${p.name}</span><span class="st ${p.tier}">${statusDisplay(p.statusFull,p.statusRev)}</span>`+
+      `<span class="pl">${pl}</span></div>`;}).join('');
+}
+function spawnPositions(){const out=[];for(let i=0;i<CFG.N;i++){const a=i*(Math.PI*2/CFG.N)-Math.PI/2,rr=CFG.ARENA_R*0.66;
+  out.push({x:CX+Math.cos(a)*rr,y:CY+Math.sin(a)*rr});}return out;}
+function makeHoles(spawns,count){holes=[];let tries=0;
+  while(holes.length<count&&tries<500){tries++;const a=rand(0,6.2832),r=rand(CFG.ARENA_R*0.22,CFG.ARENA_R*0.80);
+    const h={x:CX+Math.cos(a)*r,y:CY+Math.sin(a)*r};if(dist(h,{x:CX,y:CY})<CFG.ARENA_R*0.18)continue;let ok=true;
+    for(const s of spawns)if(dist(h,s)<CFG.HOLE_R+CFG.PLAYER_R+18){ok=false;break;}
+    for(const o of holes)if(dist(h,o)<CFG.HOLE_R*2.6){ok=false;break;}if(ok)holes.push(h);}}
+function resetGame(){
+  players=[];balls=[];particles=[];floats=[];t=0;nextSpeedup=CFG.SPEEDUP_EVERY;ball2=false;ball3=false;aiming=false;
+  $('cancelBtn').classList.remove('show','hot');
+  const spawns=spawnPositions();
+  const hues=[];for(let i=0;i<CFG.N;i++)hues.push(Math.round(i*360/CFG.N));
+  for(let i=hues.length-1;i>0;i--){const j=(Math.random()*(i+1))|0;[hues[i],hues[j]]=[hues[j],hues[i]];}
+  for(let i=0;i<CFG.N;i++)players.push({x:spawns[i].x,y:spawns[i].y,vx:0,vy:0,r:CFG.PLAYER_R,hue:hues[i],
+    alive:true,rank:0,isMe:i===0,bot:i!==0,rolling:false,wasRolling:false,cd:0,fireT:rand(.2,2)});
+  me=players[0];me.hue=205;
+  makeHoles(spawns,curRound);makeRoster();renderRoster();
+}
+function spawnBall(){const a=rand(0,6.2832);const spd=CFG.BALL_SPD_INIT*(1+(curRound-1)*0.05);
+  balls.push({x:CX,y:CY,dx:Math.cos(a),dy:Math.sin(a),spd,savedSpd:spd,r:CFG.BALL_R,trail:[],tele:0.6,hidden:false,respawnT:0});}
+
+function enterMatch(r){
+  if(r>=2){if((meta.tickets[r]||0)<1)return; meta.tickets[r]--; save();}
+  curRound=r; show('game'); fit(); resetGame();
+  phase='countdown'; cdT=CFG.COUNTDOWN; toast(Math.ceil(cdT),'#ffd76b');
+}
+function endMatch(){
+  gameActive=false; const won=me.alive; if(won)me.rank=1;
+  const reward=applyResult(won,curRound);
+  showResult(won,me.rank,curRound,reward);
+}
+$('quitBtn').onclick=()=>{phase='menu';gameActive=false;show('home');};
+
+/* ---- input (slingshot) ---- */
+function toLogic(cx,cy){const r=cv.getBoundingClientRect();return{x:(cx-r.left)/r.width*W,y:(cy-r.top)/r.height*W};}
+const meReady=()=>me&&me.alive&&!me.rolling&&me.cd<=0;
+function overCancel(cx,cy){const r=$('cancelBtn').getBoundingClientRect(),M=18;return cx>=r.left-M&&cx<=r.right+M&&cy>=r.top-M&&cy<=r.bottom+M;}
+cv.addEventListener('pointerdown',e=>{if(phase!=='playing'||!meReady())return;
+  aiming=true;aimStart=toLogic(e.clientX,e.clientY);aimCur={...aimStart};$('cancelBtn').classList.add('show');});
+window.addEventListener('pointermove',e=>{if(!aiming)return;aimCur=toLogic(e.clientX,e.clientY);
+  $('cancelBtn').classList.toggle('hot',overCancel(e.clientX,e.clientY));});
+window.addEventListener('pointerup',e=>{if(!aiming)return;
+  $('cancelBtn').classList.remove('show','hot');const over=overCancel(e.clientX,e.clientY);aiming=false;if(over)return;
+  const dx=aimCur.x-aimStart.x,dy=aimCur.y-aimStart.y,d=len(dx,dy);if(d<6)return;
+  const power=clamp(d,0,CFG.MAX_PULL)/CFG.MAX_PULL,nx=-dx/d,ny=-dy/d;
+  me.vx=nx*power*CFG.LAUNCH_MAX;me.vy=ny*power*CFG.LAUNCH_MAX;});
+$('cancelBtn').addEventListener('pointerdown',e=>{e.stopPropagation();aiming=false;$('cancelBtn').classList.remove('show','hot');});
+
+/* ---- bot ---- */
+function botLaunch(p){
+  const power=(1+((Math.random()*9)|0))/9;
+  const dest=power*CFG.LAUNCH_MAX*((1/60)/(1-CFG.ROLL_FRICTION));
+  let a=rand(0,6.2832);
+  for(let tries=0;tries<16;tries++){a=rand(0,6.2832);const dx=Math.cos(a),dy=Math.sin(a);let safe=true;
+    for(const h of holes){const tt=clamp((h.x-p.x)*dx+(h.y-p.y)*dy,0,dest);
+      if(len(h.x-(p.x+dx*tt),h.y-(p.y+dy*tt))<CFG.HOLE_CAPTURE+p.r+6){safe=false;break;}}if(safe)break;}
+  p.vx=Math.cos(a)*power*CFG.LAUNCH_MAX;p.vy=Math.sin(a)*power*CFG.LAUNCH_MAX;
+}
+
+/* ---- update ---- */
+function updateFX(dt){
+  for(const f of floats){f.life-=dt;f.y-=34*dt;}floats=floats.filter(f=>f.life>0);
+  for(const pt of particles){pt.life-=dt;pt.x+=pt.vx*dt;pt.y+=pt.vy*dt;pt.vx*=.94;pt.vy*=.94;}particles=particles.filter(p=>p.life>0);
+}
+function eliminate(p,how){if(!p.alive)return;p.rank=countAlive();p.alive=false;
+  floats.push({x:p.x,y:p.y-p.r-6,life:1.1});const col=how==='hole'?30:p.hue;
+  for(let i=0;i<14;i++){const a=rand(0,6.28),s=rand(40,260);particles.push({x:p.x,y:p.y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:rand(.3,.7),hue:col,ink:how==='hole'});}
+  renderRoster();if(p.isMe){phase='dying';deathT=CFG.DEATH_FREEZE;}}
+function update(dt){
+  if(!gameActive)return;
+  if(toastT>0)toastT-=dt;
+  if(phase==='dying'){deathT-=dt;updateFX(dt);if(deathT<=0)endMatch();return;}
+  if(phase==='countdown'){cdT-=dt;const n=Math.ceil(cdT);if(n>=1)toast(n,'#ffd76b');
+    if(cdT<=0){phase='playing';spawnBall();toast('LAO!','#ff5a6e');}return;}
+  if(phase!=='playing'){updateFX(dt);return;}
+  t+=dt;
+  if(t>=nextSpeedup){nextSpeedup+=CFG.SPEEDUP_EVERY;balls.forEach(b=>{b.spd=Math.min(b.spd*CFG.BALL_SPD_STEP,CFG.BALL_SPD_CAP);b.savedSpd=b.spd;});toast('TĂNG TỐC','#ff8a5a');}
+  if(!ball2&&t>=CFG.BALL2_AT){ball2=true;spawnBall();toast('BI THỨ 2!','#ff5a6e');}
+  if(!ball3&&t>=CFG.BALL3_AT){ball3=true;spawnBall();toast('BI THỨ 3!','#ff5a6e');}
+  for(const p of players){if(!p.alive)continue;const sp=len(p.vx,p.vy);p.rolling=sp>CFG.STOP_EPS;
+    if(p.wasRolling&&!p.rolling){p.vx=0;p.vy=0;if(p.isMe)p.cd=CFG.COOLDOWN;}p.wasRolling=p.rolling;
+    if(p.isMe){if(!p.rolling&&p.cd>0)p.cd-=dt;}else{p.fireT-=dt;if(p.fireT<=0){botLaunch(p);p.fireT=2.0;}}
+    if(p.rolling){const f=Math.pow(CFG.ROLL_FRICTION,dt*60);p.vx*=f;p.vy*=f;}p.x+=p.vx*dt;p.y+=p.vy*dt;}
+  for(let i=0;i<players.length;i++){const a=players[i];if(!a.alive)continue;
+    for(let j=i+1;j<players.length;j++){const b=players[j];if(!b.alive)continue;
+      let nx=a.x-b.x,ny=a.y-b.y,d=len(nx,ny);const min=a.r+b.r;
+      if(d<min&&d>0){nx/=d;ny/=d;const ov=(min-d)/2;a.x+=nx*ov;a.y+=ny*ov;b.x-=nx*ov;b.y-=ny*ov;
+        const rel=(a.vx-b.vx)*nx+(a.vy-b.vy)*ny;if(rel<0){const j2=-(1+CFG.KNOCK_E)*rel/2;
+          a.vx+=j2*nx;a.vy+=j2*ny;b.vx-=j2*nx;b.vy-=j2*ny;a.wasRolling=true;b.wasRolling=true;}}}}
+  for(const p of players){if(!p.alive)continue;const dx=p.x-CX,dy=p.y-CY,d=len(dx,dy),lim=CFG.ARENA_R-p.r;
+    if(d>lim&&d>0){const nx=dx/d,ny=dy/d;p.x=CX+nx*lim;p.y=CY+ny*lim;const vn=p.vx*nx+p.vy*ny;p.vx-=(1+CFG.WALL_BOUNCE)*vn*nx;p.vy-=(1+CFG.WALL_BOUNCE)*vn*ny;}}
+  for(const p of players){if(!p.alive)continue;for(const h of holes)if(dist(p,h)<CFG.HOLE_CAPTURE){eliminate(p,'hole');break;}}
+  for(const b of balls){
+    if(b.hidden){b.respawnT-=dt;if(b.respawnT<=0){const a=rand(0,6.2832);b.x=CX;b.y=CY;b.dx=Math.cos(a);b.dy=Math.sin(a);b.spd=b.savedSpd;b.hidden=false;b.tele=0.45;b.trail=[];}continue;}
+    if(b.tele>0){b.tele-=dt;continue;}
+    const steps=Math.max(1,Math.ceil(b.spd*dt/(b.r*0.8))),sdt=dt/steps;let fell=false;
+    for(let s=0;s<steps&&!fell;s++){b.x+=b.dx*b.spd*sdt;b.y+=b.dy*b.spd*sdt;
+      const dx=b.x-CX,dy=b.y-CY,d=len(dx,dy),lim=CFG.ARENA_R-b.r;
+      if(d>lim&&d>0){const nx=dx/d,ny=dy/d,dot=b.dx*nx+b.dy*ny;b.dx-=2*dot*nx;b.dy-=2*dot*ny;b.x=CX+nx*lim;b.y=CY+ny*lim;}
+      for(const h of holes)if(dist(b,h)<CFG.HOLE_CAPTURE){b.hidden=true;b.savedSpd=b.spd;b.respawnT=CFG.BALL_HOLE_RESPAWN;fell=true;break;}
+      if(!fell)for(const p of players)if(p.alive&&dist(p,b)<b.r+p.r)eliminate(p,'ball');}
+    if(!b.hidden){b.trail.push({x:b.x,y:b.y});if(b.trail.length>14)b.trail.shift();}}
+  updateFX(dt);
+  if(phase==='playing'&&me.alive&&countAlive()<=1){me.rank=1;endMatch();}
+}
+
+/* ---- render ---- */
+function rayWall(ox,oy,dx,dy){const R0=CFG.ARENA_R-CFG.PLAYER_R,px=ox-CX,py=oy-CY;
+  const b=px*dx+py*dy,c=px*px+py*py-R0*R0,disc=b*b-c;if(disc<0)return CFG.PREDICT_LEN;return -b+Math.sqrt(disc);}
+function render(){
+  if(!gameActive)return;
+  ctx.clearRect(0,0,W,W);
+  ctx.beginPath();ctx.arc(CX,CY,CFG.ARENA_R+14,0,6.2832);ctx.fillStyle='#5a3d24';ctx.fill();ctx.lineWidth=4;ctx.strokeStyle='#3a2614';ctx.stroke();
+  const g=ctx.createRadialGradient(CX,CY,30,CX,CY,CFG.ARENA_R);g.addColorStop(0,'#e9d3a8');g.addColorStop(.7,'#d8bd8c');g.addColorStop(1,'#c2a06d');
+  ctx.beginPath();ctx.arc(CX,CY,CFG.ARENA_R,0,6.2832);ctx.fillStyle=g;ctx.fill();
+  ctx.save();ctx.translate(CX,CY);ctx.strokeStyle='rgba(120,90,50,.35)';ctx.lineWidth=2;
+  ctx.beginPath();ctx.arc(0,0,CFG.ARENA_R*0.5,0,6.2832);ctx.stroke();
+  ctx.rotate(Math.PI/4);ctx.strokeRect(-CFG.ARENA_R*0.18,-CFG.ARENA_R*0.18,CFG.ARENA_R*0.36,CFG.ARENA_R*0.36);ctx.restore();
+  ctx.save();ctx.beginPath();ctx.arc(CX,CY,CFG.ARENA_R,0,6.2832);ctx.clip();
+  for(const h of holes){const hg=ctx.createRadialGradient(h.x,h.y,2,h.x,h.y,CFG.HOLE_R);
+    hg.addColorStop(0,'#000');hg.addColorStop(.55,'#0a0805');hg.addColorStop(1,'rgba(20,14,8,0)');
+    ctx.beginPath();ctx.arc(h.x,h.y,CFG.HOLE_R,0,6.2832);ctx.fillStyle=hg;ctx.fill();
+    ctx.beginPath();ctx.arc(h.x,h.y,CFG.HOLE_CAPTURE,0,6.2832);ctx.fillStyle='#000';ctx.fill();}
+  for(const pt of particles){ctx.globalAlpha=clamp(pt.life*1.6,0,1);ctx.fillStyle=pt.ink?'#0a0705':`hsl(${pt.hue},90%,62%)`;
+    ctx.beginPath();ctx.arc(pt.x,pt.y,2.5,0,6.2832);ctx.fill();}ctx.globalAlpha=1;ctx.restore();
+  for(const p of players){if(p.alive)drawMarble(p);}
+  for(const f of floats){ctx.globalAlpha=clamp(f.life,0,1);ctx.font='900 24px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.lineWidth=4;ctx.strokeStyle='#000';ctx.strokeText('OUT',f.x,f.y);ctx.fillStyle='#ff5a6e';ctx.fillText('OUT',f.x,f.y);}ctx.globalAlpha=1;
+  if(aiming&&me&&me.alive){const dx=aimCur.x-aimStart.x,dy=aimCur.y-aimStart.y,d=len(dx,dy);
+    if(d>6){const power=clamp(d,0,CFG.MAX_PULL)/CFG.MAX_PULL,nx=-dx/d,ny=-dy/d;
+      const tx=-nx,ty=-ny,TL=20+power*70;ctx.save();ctx.shadowColor='#5fd0ff';ctx.shadowBlur=16;
+      const tg=ctx.createLinearGradient(me.x,me.y,me.x+tx*TL,me.y+ty*TL);tg.addColorStop(0,'rgba(150,230,255,.95)');tg.addColorStop(1,'rgba(120,210,255,0)');
+      ctx.strokeStyle=tg;ctx.lineWidth=me.r*1.6;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(me.x,me.y);ctx.lineTo(me.x+tx*TL,me.y+ty*TL);ctx.stroke();ctx.restore();
+      const t2=rayWall(me.x,me.y,nx,ny),L=Math.min(power*CFG.PREDICT_LEN,t2);
+      ctx.strokeStyle='rgba(180,235,255,.85)';ctx.lineWidth=3;ctx.setLineDash([3,9]);ctx.lineCap='round';
+      ctx.beginPath();ctx.moveTo(me.x,me.y);ctx.lineTo(me.x+nx*L,me.y+ny*L);ctx.stroke();ctx.setLineDash([]);
+      ctx.fillStyle='#eafaff';ctx.shadowColor='#5fd0ff';ctx.shadowBlur=12;ctx.beginPath();ctx.arc(me.x+nx*L,me.y+ny*L,5,0,6.2832);ctx.fill();ctx.shadowBlur=0;
+      ctx.fillStyle=`hsl(${120-power*120},90%,55%)`;ctx.fillRect(me.x-22,me.y-me.r-14,44*power,4);}}
+  for(const b of balls){if(b.hidden)continue;
+    if(b.tele>0){drawDeath(CX,CY,b.r*0.8,0.4);ctx.strokeStyle=`rgba(255,60,80,${.3+.4*Math.sin(t*30)})`;ctx.lineWidth=2;ctx.setLineDash([6,8]);
+      ctx.beginPath();ctx.moveTo(CX,CY);ctx.lineTo(CX+b.dx*CFG.ARENA_R,CY+b.dy*CFG.ARENA_R);ctx.stroke();ctx.setLineDash([]);continue;}
+    for(let i=0;i<b.trail.length;i++){const tr=b.trail[i];ctx.globalAlpha=i/b.trail.length*0.5;ctx.fillStyle='#ff3b52';ctx.beginPath();ctx.arc(tr.x,tr.y,b.r*0.7,0,6.2832);ctx.fill();}
+    ctx.globalAlpha=1;drawDeath(b.x,b.y,b.r,1);}
+  if(me&&me.alive&&phase==='playing'){if(meReady()){ctx.strokeStyle=`rgba(255,255,255,${.45+.4*Math.sin(t*6)})`;ctx.lineWidth=2;
+      ctx.beginPath();ctx.arc(me.x,me.y,me.r+5,0,6.2832);ctx.stroke();}
+    else if(!me.rolling&&me.cd>0){const frac=1-me.cd/CFG.COOLDOWN;ctx.strokeStyle='rgba(255,215,107,.9)';ctx.lineWidth=2.5;
+      ctx.beginPath();ctx.arc(me.x,me.y,me.r+5,-Math.PI/2,-Math.PI/2+frac*6.2832);ctx.stroke();}}
+  if(toastT>0){ctx.globalAlpha=clamp(toastT/0.9,0,1);ctx.fillStyle=toastCol;ctx.font='900 50px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.shadowColor='#000';ctx.shadowBlur=12;ctx.fillText(toastTxt,CX,CY*0.8);ctx.shadowBlur=0;ctx.globalAlpha=1;}
+}
+function drawMarble(p){const x=p.x,y=p.y,r=p.r,hue=p.hue;
+  const g=ctx.createRadialGradient(x-r*.35,y-r*.35,r*.1,x,y,r);
+  g.addColorStop(0,`hsl(${hue},95%,86%)`);g.addColorStop(.5,`hsl(${hue},85%,58%)`);g.addColorStop(1,`hsl(${hue},80%,33%)`);
+  ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,r,0,6.2832);ctx.fill();
+  ctx.fillStyle='rgba(255,255,255,.92)';ctx.beginPath();ctx.arc(x-r*.32,y-r*.34,r*.26,0,6.2832);ctx.fill();}
+function drawDeath(x,y,r,a){ctx.globalAlpha=a;ctx.shadowColor='#ff2030';ctx.shadowBlur=18;
+  const g=ctx.createRadialGradient(x-r*.3,y-r*.3,r*.1,x,y,r);g.addColorStop(0,'#444');g.addColorStop(.55,'#0e0e12');g.addColorStop(1,'#000');
+  ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,r,0,6.2832);ctx.fill();ctx.shadowBlur=0;ctx.globalAlpha=1;}
+function syncHUD(){if(!gameActive)return;$('timeV').textContent=t.toFixed(1);$('aliveV').textContent=countAlive();$('roundHV').textContent=curRound;}
+
+let last=performance.now();
+function loop(now){let dt=(now-last)/1000;last=now;dt=Math.min(dt,0.04);update(dt);render();syncHUD();requestAnimationFrame(loop);}
+requestAnimationFrame(loop);
+
+/* ---------------- BOOT ---------------- */
+renderHome();
+</script>
 </body>
 </html>
