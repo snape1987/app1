@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-<title>Gobston — Mày Có Biết Bố Mày Là Ai Không?</title>
+<title>Bi Vương — Mày Có Biết Bố Mày Là Ai Không?</title>
 <style>
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
   :root{--gold:#f0c468;--gold2:#e8a13a;--bg:#0b0a08;--card:rgba(28,22,14,.82);--line:rgba(240,196,104,.22);}
@@ -121,7 +121,7 @@
 
   <!-- HOME -->
   <div class="screen active" id="home">
-    <div class="topbar"><h1>GOBSTON</h1><div class="spacer"></div><span class="muted">Mày có biết Bố mày là ai không?</span></div>
+    <div class="topbar"><h1>BI VƯƠNG</h1><div class="spacer"></div><span class="muted">Mày có biết Bố mày là ai không?</span></div>
     <div class="scroll">
       <div class="card hero">
         <div class="marble"></div>
@@ -213,12 +213,12 @@
 <script>
 "use strict";
 /* =========================================================================
-   GOBSTON — unified app (meta local-first + game). Single file, no build.
+   BI VƯƠNG — unified app (meta local-first + game). Single file, no build.
    ========================================================================= */
 
 /* ---------------- META STORE (localStorage) ---------------- */
 const KEY='gobston.save.v1';
-const DEF=()=>({name:'Bạn',statusFull:'Tomorrow never die',statusRev:0,wins:0,plays:0,bestRound:1,tickets:{}});
+const DEF=()=>({name:'Bạn',statusFull:'Bố mày vô địch',statusRev:0,wins:0,plays:0,bestRound:1,tickets:{}});
 let meta=load();
 function load(){try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&s.statusFull!=null)return Object.assign(DEF(),s);}catch(e){}return DEF();}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(meta));}catch(e){}}
@@ -235,7 +235,7 @@ async function fetchBoard(scope){if(!API_BASE)return null;try{
   const r=await fetch(API_BASE+'/leaderboard?scope='+scope+'&limit='+(scope==='region'?10:100));
   if(!r.ok)return null;const j=await r.json();return Array.isArray(j.entries)?j.entries:null;}catch(e){return null;}}
 
-const STATUS_PRESETS=["Tomorrow never die","Bố mày là số 1","King of Gobston","Vô đối thiên hạ",
+const STATUS_PRESETS=["Bố mày vô địch","Bố mày là số 1","Vua Bi Vương","Vô đối thiên hạ",
   "Huyền thoại sống","Không ai bằng ta","Đỉnh của chóp","Bất bại","Chúa tể bàn đấu","Ta là nhất"];
 function statusDisplay(full,rev){let s="";for(let i=0;i<full.length;i++)s+=i<rev?full[i]:(full[i]===' '?' ':'·');return s;}
 function myTier(){const b=meta.bestRound;return b>=5?'t-diamond':b>=4?'t-platinum':b>=3?'t-silver':'';}
@@ -357,9 +357,9 @@ function showResult(won,rank,r,reward){
 $('rHome').onclick=()=>show('home');
 
 /* =========================================================================
-   GAME (canvas) — Gobston showdown vs 8 bots
+   GAME (canvas) — đấu trường bắn bi vs 8 bot
    ========================================================================= */
-const CFG={N:9,W:720,ARENA_R:320,PLAYER_R:5,BALL_R:5,MAX_PULL:160,LAUNCH_MAX:660,
+const CFG={N:9,W:720,ARENA_R:320,PLAYER_R:20,BALL_R:5,MAX_PULL:160,LAUNCH_MAX:660,
   ROLL_FRICTION:0.94,STOP_EPS:14,COOLDOWN:2.0,WALL_BOUNCE:0.66,KNOCK_E:0.9,PREDICT_LEN:340,
   BALL_SPD_INIT:205,BALL_SPD_STEP:1.15,BALL_SPD_CAP:1500,SPEEDUP_EVERY:5,BALL2_AT:30,BALL3_AT:60,
   HOLE_R:20,HOLE_CAPTURE:12,BALL_HOLE_RESPAWN:2.0,COUNTDOWN:3,DEATH_FREEZE:0.7};
@@ -505,7 +505,7 @@ function hexPath(cx,cy,r){ctx.beginPath();for(let i=0;i<6;i++){const a=Math.PI/2
 function render(){
   if(!gameActive)return;
   ctx.clearRect(0,0,W,W);
-  /* hexagon wooden table (Gobstones Showdown style) */
+  /* hexagon wooden table (carrom / marble-board style) */
   hexPath(CX,CY,CFG.ARENA_R+44);ctx.fillStyle='#241708';ctx.fill();ctx.lineWidth=12;ctx.strokeStyle='#0d0904';ctx.stroke();
   const wg=ctx.createLinearGradient(CX-CFG.ARENA_R,CY-CFG.ARENA_R,CX+CFG.ARENA_R,CY+CFG.ARENA_R);
   wg.addColorStop(0,'#6e4c2a');wg.addColorStop(.5,'#835c33');wg.addColorStop(1,'#583c21');
