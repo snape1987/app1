@@ -2,6 +2,11 @@ name: Build App1 APK
 on:
   push:
     branches: [ "main" ]
+    paths:
+      - "www/**"
+      - "capacitor.config.json"
+      - "package.json"
+      - ".github/workflows/android.yml"
   workflow_dispatch:
 permissions:
   contents: write
