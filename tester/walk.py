@@ -101,8 +101,15 @@ def install_latest():
     subprocess.run(["gh", "release", "download", "--repo", REPO, "--pattern", "*.apk",
                     "--dir", d, "--clobber"], check=True)
     apk = next(Path(d).glob("*.apk"))
-    print(f"adb install -r {apk.name}")
-    subprocess.run(["adb", "install", "-r", str(apk)], check=True)
+    # CI sinh debug keystore mới mỗi build -> chữ ký khác -> phải uninstall truoc
+    print(f"adb uninstall {APP_ID} (bo qua neu chua cai)")
+    subprocess.run(["adb", "uninstall", APP_ID], capture_output=True, text=True)
+    print(f"adb install {apk.name}")
+    r = subprocess.run(["adb", "install", str(apk)], capture_output=True, text=True)
+    if r.returncode != 0:
+        print("INSTALL LOI:", (r.stdout + r.stderr).strip())
+        raise SystemExit(1)
+    print("install OK")
 
 
 def main():
@@ -126,23 +133,21 @@ def main():
     size = wm_size()
     print(f"Man hinh: {size[0]}x{size[1]}")
 
-    # Cold start: force-stop rồi mới start -> SPA luôn boot về Trang chủ
-    adb("shell", "am", "force-stop", APP_ID)
-    time.sleep(1)
-    adb("shell", "am", "start", "-n", f"{APP_ID}/.MainActivity")
-    time.sleep(3.5)
-    screenshot("01_home.png")
+    def cold():
+        """Cold start -> SPA luôn về Trang chủ (tránh resume nhầm màn)."""
+        adb("shell", "am", "force-stop", APP_ID)
+        time.sleep(0.8)
+        adb("shell", "am", "start", "-n", f"{APP_ID}/.MainActivity")
+        time.sleep(3.5)
 
-    # Walk theo toạ độ (frac) — canh từ ảnh thật 1200x2640.
-    # WebView nên uiautomator không thấy text -> dùng frac.
-    step("02_round.png",       frac=(0.5, 0.59),  wait=2.0, size=size)   # CHƠI
+    # Toạ độ frac canh từ ảnh thật 1200x2640 (WebView -> uiautomator không thấy text):
+    # nút home: CHƠI~0.56, KHẮC DANH HIỆU~0.63, BẢNG XẾP HẠNG~0.72, ĐỔI TÊN~0.80
+    cold(); screenshot("01_home.png")
+    step("02_round.png",       frac=(0.5, 0.56),  wait=2.0, size=size)   # CHƠI -> Chọn Round
     step("03_game.png",        frac=(0.5, 0.28),  wait=4.5, size=size)   # Round 1 -> vào trận
     step("04_game_play.png",   frac=None,         wait=3.0, size=size)   # đang chơi
-    step("05_after_quit.png",  frac=(0.85, 0.72), wait=2.0, size=size)   # Thoát -> home
-    step("06_status.png",      frac=(0.5, 0.67),  wait=2.0, size=size)   # KHẮC DANH HIỆU
-    step("07_home2.png",       frac=(0.10, 0.04), wait=1.5, size=size)   # ‹ Về
-    step("08_leaderboard.png", frac=(0.5, 0.76),  wait=3.0, size=size)   # BẢNG XẾP HẠNG (kiểm BXH online)
-    step("09_home3.png",       frac=(0.10, 0.04), wait=1.5, size=size)   # ‹ Về
+    cold(); step("05_status.png",      frac=(0.5, 0.63), wait=2.0, size=size)  # KHẮC DANH HIỆU
+    cold(); step("06_leaderboard.png", frac=(0.5, 0.72), wait=3.5, size=size)  # BẢNG XẾP HẠNG (BXH online)
 
     print(f"\nXong. Anh o: {SHOTS}")
     print("Gui lai cho Claude review, hoac Claude tu Read neu chay tren may build.")
