@@ -133,12 +133,13 @@ def main():
     size = wm_size()
     print(f"Man hinh: {size[0]}x{size[1]}")
 
-    def cold():
-        """Cold start -> SPA luôn về Trang chủ (tránh resume nhầm màn)."""
+    def cold(extra=0.0):
+        """Cold start -> SPA luôn về Trang chủ (tránh resume nhầm màn).
+        Chờ 5 s để WebView render xong; dùng extra nếu máy chậm hơn."""
         adb("shell", "am", "force-stop", APP_ID)
         time.sleep(0.8)
         adb("shell", "am", "start", "-n", f"{APP_ID}/.MainActivity")
-        time.sleep(3.5)
+        time.sleep(5.0 + extra)
 
     # Toạ độ frac canh từ ảnh thật 1200x2640 (WebView -> uiautomator không thấy text):
     # nút home: CHƠI~0.56, KHẮC DANH HIỆU~0.63, BẢNG XẾP HẠNG~0.72, ĐỔI TÊN~0.80
@@ -147,9 +148,15 @@ def main():
     step("03_game.png",        frac=(0.5, 0.28),  wait=4.5, size=size)   # Round 1 -> vào trận
     step("04_game_play.png",   frac=None,         wait=3.0, size=size)   # đang chơi
     cold(); step("05_status.png",      frac=(0.5, 0.63), wait=2.0, size=size)  # KHẮC DANH HIỆU
-    cold(); step("06_leaderboard.png", frac=(0.5, 0.72), wait=3.5, size=size)  # BẢNG XẾP HẠNG (BXH online)
+
+    # BXH: cold() rồi chụp thêm 1 ảnh pre-tap để xác nhận đang ở home trước khi tap
+    cold()
+    screenshot("06_pre_bxh.png")   # phải thấy home screen — nếu không phải home thì tăng cold(extra=...)
+    step("07_leaderboard.png", frac=(0.5, 0.72), wait=5.0, size=size)  # BẢNG XẾP HẠNG (BXH online)
 
     print(f"\nXong. Anh o: {SHOTS}")
+    print("Kiem tra 06_pre_bxh.png: phai la home screen.")
+    print("Neu 07_leaderboard.png van sai man -> chay lai voi cold(extra=2.0)")
     print("Gui lai cho Claude review, hoac Claude tu Read neu chay tren may build.")
 
 
