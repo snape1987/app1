@@ -360,9 +360,9 @@ $('rHome').onclick=()=>show('home');
    GAME (canvas) — đấu trường bắn bi vs 8 bot
    ========================================================================= */
 const CFG={N:9,W:720,ARENA_R:320,PLAYER_R:20,BALL_R:5,MAX_PULL:160,LAUNCH_MAX:660,
-  ROLL_FRICTION:0.94,STOP_EPS:14,COOLDOWN:2.0,WALL_BOUNCE:0.66,KNOCK_E:0.9,PREDICT_LEN:340,
+  ROLL_FRICTION:0.965,STOP_EPS:8,COOLDOWN:2.0,WALL_BOUNCE:0.55,KNOCK_E:0.9,PREDICT_LEN:340,
   BALL_SPD_INIT:205,BALL_SPD_STEP:1.15,BALL_SPD_CAP:1500,SPEEDUP_EVERY:5,BALL2_AT:30,BALL3_AT:60,
-  HOLE_R:20,HOLE_CAPTURE:12,BALL_HOLE_RESPAWN:2.0,COUNTDOWN:3,DEATH_FREEZE:0.7};
+  HOLE_R:24,HOLE_CAPTURE:20,BALL_HOLE_RESPAWN:2.0,COUNTDOWN:3,DEATH_FREEZE:0.7};
 const cv=$('cv'),ctx=cv.getContext('2d');const W=CFG.W,CX=W/2,CY=W/2;let dpr=1;
 function fit(){dpr=Math.min(window.devicePixelRatio||1,2);cv.width=W*dpr;cv.height=W*dpr;
   const px=Math.min(window.innerWidth,window.innerHeight)-6;cv.style.width=px+'px';cv.style.height=px+'px';
@@ -523,9 +523,8 @@ function render(){
   ctx.restore();
   ctx.save();ctx.beginPath();ctx.arc(CX,CY,CFG.ARENA_R,0,6.2832);ctx.clip();
   for(const h of holes){const hg=ctx.createRadialGradient(h.x,h.y,2,h.x,h.y,CFG.HOLE_R);
-    hg.addColorStop(0,'#000');hg.addColorStop(.55,'#0a0805');hg.addColorStop(1,'rgba(20,14,8,0)');
-    ctx.beginPath();ctx.arc(h.x,h.y,CFG.HOLE_R,0,6.2832);ctx.fillStyle=hg;ctx.fill();
-    ctx.beginPath();ctx.arc(h.x,h.y,CFG.HOLE_CAPTURE,0,6.2832);ctx.fillStyle='#000';ctx.fill();}
+    hg.addColorStop(0,'#000');hg.addColorStop(.6,'#080604');hg.addColorStop(1,'rgba(18,12,6,0)');
+    ctx.beginPath();ctx.arc(h.x,h.y,CFG.HOLE_R,0,6.2832);ctx.fillStyle=hg;ctx.fill();}
   for(const pt of particles){ctx.globalAlpha=clamp(pt.life*1.6,0,1);ctx.fillStyle=pt.ink?'#0a0705':`hsl(${pt.hue},90%,62%)`;
     ctx.beginPath();ctx.arc(pt.x,pt.y,2.5,0,6.2832);ctx.fill();}ctx.globalAlpha=1;ctx.restore();
   for(const p of players){if(p.alive)drawMarble(p);}
@@ -555,13 +554,35 @@ function render(){
 }
 function drawMarble(p){const x=p.x,y=p.y,r=p.r,hue=p.hue;
   ctx.save();
-  ctx.shadowColor=`hsl(${hue},95%,60%)`;ctx.shadowBlur=11;
-  const g=ctx.createRadialGradient(x-r*.35,y-r*.35,r*.1,x,y,r);
-  g.addColorStop(0,`hsl(${hue},100%,93%)`);g.addColorStop(.45,`hsl(${hue},92%,62%)`);g.addColorStop(1,`hsl(${hue},88%,34%)`);
+  // glow ngoài
+  ctx.shadowColor=`hsl(${hue},95%,62%)`;ctx.shadowBlur=15;
+  // gradient chính — 4 stop, chiều sâu như đá quý
+  const g=ctx.createRadialGradient(x-r*.35,y-r*.35,r*.05,x,y,r*1.05);
+  g.addColorStop(0,`hsl(${hue},100%,97%)`);
+  g.addColorStop(.18,`hsl(${hue},100%,82%)`);
+  g.addColorStop(.58,`hsl(${hue},90%,56%)`);
+  g.addColorStop(1,`hsl(${hue},85%,26%)`);
   ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,r,0,6.2832);ctx.fill();
   ctx.shadowBlur=0;
-  ctx.fillStyle='rgba(255,255,255,.95)';ctx.beginPath();ctx.arc(x-r*.34,y-r*.36,r*.30,0,6.2832);ctx.fill();
-  ctx.fillStyle='rgba(255,255,255,.4)';ctx.beginPath();ctx.arc(x+r*.22,y+r*.26,r*.14,0,6.2832);ctx.fill();
+  // lớp depth tối mép — cảm giác 3D
+  const ig=ctx.createRadialGradient(x,y,r*.35,x,y,r);
+  ig.addColorStop(0,'rgba(255,255,255,0)');
+  ig.addColorStop(1,`hsla(${hue+30},60%,15%,.28)`);
+  ctx.fillStyle=ig;ctx.beginPath();ctx.arc(x,y,r,0,6.2832);ctx.fill();
+  // highlight chính
+  ctx.fillStyle='rgba(255,255,255,.92)';
+  ctx.beginPath();ctx.arc(x-r*.33,y-r*.35,r*.28,0,6.2832);ctx.fill();
+  // secondary gloss
+  ctx.fillStyle='rgba(255,255,255,.38)';
+  ctx.beginPath();ctx.arc(x+r*.20,y+r*.26,r*.13,0,6.2832);ctx.fill();
+  // sparkle xoay — điểm sáng nhỏ xoay theo thời gian, mỗi bi pha khác nhau
+  const ph=t*0.9+(hue/360)*6.2832;
+  const gx=x+Math.cos(ph)*r*.60,gy=y+Math.sin(ph)*r*.60;
+  const sk=Math.abs(Math.sin(t*2.2+(hue/55)))*.80+.20;
+  ctx.globalAlpha=sk*.88;
+  ctx.fillStyle='rgba(255,255,255,.95)';
+  ctx.beginPath();ctx.arc(gx,gy,r*.115,0,6.2832);ctx.fill();
+  ctx.globalAlpha=1;
   ctx.restore();}
 function drawDeath(x,y,r,a){ctx.globalAlpha=a;ctx.shadowColor='#ff2030';ctx.shadowBlur=18;
   const g=ctx.createRadialGradient(x-r*.3,y-r*.3,r*.1,x,y,r);g.addColorStop(0,'#444');g.addColorStop(.55,'#0e0e12');g.addColorStop(1,'#000');
