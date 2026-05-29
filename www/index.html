@@ -579,37 +579,72 @@ function render(){
   if(toastT>0){ctx.globalAlpha=clamp(toastT/0.9,0,1);ctx.fillStyle=toastCol;ctx.font='900 50px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';
     ctx.shadowColor='#000';ctx.shadowBlur=12;ctx.fillText(toastTxt,CX,CY*0.8);ctx.shadowBlur=0;ctx.globalAlpha=1;}
 }
-function drawMarble(p){const x=p.x,y=p.y,r=p.r,hue=p.hue;
+/* Pre-render 1 viên bi có texture vân mã não/ngân hà -> offscreen canvas (cache).
+   Vẽ 1 lần lúc tạo player, mỗi frame chỉ blit (mượt). */
+const SPR_SCALE=2;                       // siêu nét
+function makeMarbleSprite(hue){
+  const r=CFG.PLAYER_R,pad=7,S=(r+pad)*2;
+  const c=document.createElement('canvas');c.width=c.height=S*SPR_SCALE;
+  const g=c.getContext('2d');g.scale(SPR_SCALE,SPR_SCALE);
+  const cx=S/2,cy=S/2;
+  g.save();g.beginPath();g.arc(cx,cy,r,0,6.2832);g.clip();
+  // nền cầu
+  const base=g.createRadialGradient(cx-r*.3,cy-r*.34,r*.1,cx,cy,r*1.12);
+  base.addColorStop(0,`hsl(${hue},80%,70%)`);
+  base.addColorStop(.55,`hsl(${hue},78%,50%)`);
+  base.addColorStop(1,`hsl(${hue},72%,30%)`);
+  g.fillStyle=base;g.fillRect(0,0,S,S);
+  // vân mây nhiều lớp — hue lệch tạo cảm giác mã não/ngân hà
+  const rnd=(a,b)=>a+Math.random()*(b-a);
+  for(let i=0;i<9;i++){
+    const a=rnd(0,6.2832),dr=rnd(0,r*.72),bx=cx+Math.cos(a)*dr,by=cy+Math.sin(a)*dr;
+    const br=r*rnd(.28,.62),bh=hue+rnd(-42,42),bl=rnd(38,80),al=rnd(.22,.5);
+    const bg=g.createRadialGradient(bx,by,0,bx,by,br);
+    bg.addColorStop(0,`hsla(${bh},85%,${bl}%,${al})`);
+    bg.addColorStop(1,`hsla(${bh},85%,${bl}%,0)`);
+    g.fillStyle=bg;g.beginPath();g.arc(bx,by,br,0,6.2832);g.fill();
+  }
+  // vài tia sáng mảnh (wisp) cho lấp lánh sâu bên trong
+  for(let i=0;i<3;i++){
+    const a=rnd(0,6.2832),dr=rnd(0,r*.6),bx=cx+Math.cos(a)*dr,by=cy+Math.sin(a)*dr,br=r*rnd(.18,.34);
+    const bg=g.createRadialGradient(bx,by,0,bx,by,br);
+    bg.addColorStop(0,`hsla(${hue+15},100%,92%,.55)`);bg.addColorStop(1,`hsla(${hue+15},100%,92%,0)`);
+    g.fillStyle=bg;g.beginPath();g.arc(bx,by,br,0,6.2832);g.fill();
+  }
+  // vignette tối mép -> khối cầu
+  const vig=g.createRadialGradient(cx,cy,r*.5,cx,cy,r);
+  vig.addColorStop(0,'rgba(0,0,0,0)');vig.addColorStop(1,`hsla(${hue},70%,10%,.6)`);
+  g.fillStyle=vig;g.fillRect(0,0,S,S);
+  g.restore();
+  // viền sáng (rim light) phía trên-trái
+  const rim=g.createLinearGradient(cx-r,cy-r,cx+r*.3,cy+r*.3);
+  rim.addColorStop(0,'rgba(255,255,255,.8)');rim.addColorStop(.45,'rgba(255,255,255,0)');
+  g.lineWidth=1.6;g.strokeStyle=rim;g.beginPath();g.arc(cx,cy,r-1,0,6.2832);g.stroke();
+  // specular bóng kính
+  const sx=cx-r*.32,sy=cy-r*.36;
+  const spec=g.createRadialGradient(sx,sy,0,sx,sy,r*.46);
+  spec.addColorStop(0,'rgba(255,255,255,.95)');spec.addColorStop(.45,'rgba(255,255,255,.28)');spec.addColorStop(1,'rgba(255,255,255,0)');
+  g.fillStyle=spec;g.beginPath();g.arc(sx,sy,r*.46,0,6.2832);g.fill();
+  return {canvas:c,S,pad};
+}
+function drawSparkle(x,y,sz,alpha){
+  ctx.save();ctx.translate(x,y);ctx.globalAlpha=alpha;
+  ctx.fillStyle='#fff';ctx.shadowColor='#fff';ctx.shadowBlur=sz*1.1;
+  ctx.beginPath();
+  for(let i=0;i<8;i++){const rr=i%2===0?sz:sz*.16,a=i*Math.PI/4-Math.PI/2;
+    const px=Math.cos(a)*rr,py=Math.sin(a)*rr;i?ctx.lineTo(px,py):ctx.moveTo(px,py);}
+  ctx.closePath();ctx.fill();ctx.restore();
+}
+function drawMarble(p){
+  if(!p.sprite)p.sprite=makeMarbleSprite(p.hue);
+  const sp=p.sprite,x=p.x,y=p.y,r=p.r;
   ctx.save();
-  // glow ngoài
-  ctx.shadowColor=`hsl(${hue},95%,62%)`;ctx.shadowBlur=15;
-  // gradient chính — 4 stop, chiều sâu như đá quý
-  const g=ctx.createRadialGradient(x-r*.35,y-r*.35,r*.05,x,y,r*1.05);
-  g.addColorStop(0,`hsl(${hue},100%,97%)`);
-  g.addColorStop(.18,`hsl(${hue},100%,82%)`);
-  g.addColorStop(.58,`hsl(${hue},90%,56%)`);
-  g.addColorStop(1,`hsl(${hue},85%,26%)`);
-  ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,r,0,6.2832);ctx.fill();
+  ctx.shadowColor=`hsl(${p.hue},90%,55%)`;ctx.shadowBlur=12;
+  ctx.drawImage(sp.canvas,x-(r+sp.pad),y-(r+sp.pad),sp.S,sp.S);
   ctx.shadowBlur=0;
-  // lớp depth tối mép — cảm giác 3D
-  const ig=ctx.createRadialGradient(x,y,r*.35,x,y,r);
-  ig.addColorStop(0,'rgba(255,255,255,0)');
-  ig.addColorStop(1,`hsla(${hue+30},60%,15%,.28)`);
-  ctx.fillStyle=ig;ctx.beginPath();ctx.arc(x,y,r,0,6.2832);ctx.fill();
-  // highlight chính
-  ctx.fillStyle='rgba(255,255,255,.92)';
-  ctx.beginPath();ctx.arc(x-r*.33,y-r*.35,r*.28,0,6.2832);ctx.fill();
-  // secondary gloss
-  ctx.fillStyle='rgba(255,255,255,.38)';
-  ctx.beginPath();ctx.arc(x+r*.20,y+r*.26,r*.13,0,6.2832);ctx.fill();
-  // sparkle xoay — điểm sáng nhỏ xoay theo thời gian, mỗi bi pha khác nhau
-  const ph=t*0.9+(hue/360)*6.2832;
-  const gx=x+Math.cos(ph)*r*.60,gy=y+Math.sin(ph)*r*.60;
-  const sk=Math.abs(Math.sin(t*2.2+(hue/55)))*.80+.20;
-  ctx.globalAlpha=sk*.88;
-  ctx.fillStyle='rgba(255,255,255,.95)';
-  ctx.beginPath();ctx.arc(gx,gy,r*.115,0,6.2832);ctx.fill();
-  ctx.globalAlpha=1;
+  // tia sparkle nhấp nháy tại điểm bóng kính (mỗi bi pha khác nhau)
+  const sk=Math.pow(Math.abs(Math.sin(t*1.9+p.hue/47)),4);
+  if(sk>0.04)drawSparkle(x-r*.30,y-r*.34,r*(.30+.45*sk),sk);
   ctx.restore();}
 function drawDeath(x,y,r,a){ctx.globalAlpha=a;ctx.shadowColor='#ff2030';ctx.shadowBlur=18;
   const g=ctx.createRadialGradient(x-r*.3,y-r*.3,r*.1,x,y,r);g.addColorStop(0,'#444');g.addColorStop(.55,'#0e0e12');g.addColorStop(1,'#000');
