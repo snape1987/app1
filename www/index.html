@@ -594,23 +594,17 @@ function makeMarbleSprite(hue){
   base.addColorStop(.55,`hsl(${hue},78%,50%)`);
   base.addColorStop(1,`hsl(${hue},72%,30%)`);
   g.fillStyle=base;g.fillRect(0,0,S,S);
-  // vân mây nhiều lớp — hue lệch tạo cảm giác mã não/ngân hà
+  // vân mã não/ngân hà — 2 lớp tương phản: vệt TỐI + vệt SÁNG SỮA
   const rnd=(a,b)=>a+Math.random()*(b-a);
-  for(let i=0;i<9;i++){
-    const a=rnd(0,6.2832),dr=rnd(0,r*.72),bx=cx+Math.cos(a)*dr,by=cy+Math.sin(a)*dr;
-    const br=r*rnd(.28,.62),bh=hue+rnd(-42,42),bl=rnd(38,80),al=rnd(.22,.5);
-    const bg=g.createRadialGradient(bx,by,0,bx,by,br);
-    bg.addColorStop(0,`hsla(${bh},85%,${bl}%,${al})`);
-    bg.addColorStop(1,`hsla(${bh},85%,${bl}%,0)`);
-    g.fillStyle=bg;g.beginPath();g.arc(bx,by,br,0,6.2832);g.fill();
-  }
-  // vài tia sáng mảnh (wisp) cho lấp lánh sâu bên trong
-  for(let i=0;i<3;i++){
-    const a=rnd(0,6.2832),dr=rnd(0,r*.6),bx=cx+Math.cos(a)*dr,by=cy+Math.sin(a)*dr,br=r*rnd(.18,.34);
-    const bg=g.createRadialGradient(bx,by,0,bx,by,br);
-    bg.addColorStop(0,`hsla(${hue+15},100%,92%,.55)`);bg.addColorStop(1,`hsla(${hue+15},100%,92%,0)`);
-    g.fillStyle=bg;g.beginPath();g.arc(bx,by,br,0,6.2832);g.fill();
-  }
+  const blob=(bx,by,br,h,l,al)=>{const bg=g.createRadialGradient(bx,by,0,bx,by,br);
+    bg.addColorStop(0,`hsla(${h},90%,${l}%,${al})`);bg.addColorStop(.7,`hsla(${h},90%,${l}%,${al*.5})`);
+    bg.addColorStop(1,`hsla(${h},90%,${l}%,0)`);g.fillStyle=bg;g.beginPath();g.arc(bx,by,br,0,6.2832);g.fill();};
+  // vệt tối (chiều sâu)
+  for(let i=0;i<5;i++){const a=rnd(0,6.2832),dr=rnd(r*.1,r*.75);
+    blob(cx+Math.cos(a)*dr,cy+Math.sin(a)*dr,r*rnd(.3,.6),hue+rnd(-55,55),rnd(18,34),rnd(.4,.65));}
+  // vệt sáng sữa (swirl)
+  for(let i=0;i<6;i++){const a=rnd(0,6.2832),dr=rnd(0,r*.7);
+    blob(cx+Math.cos(a)*dr,cy+Math.sin(a)*dr,r*rnd(.22,.5),hue+rnd(-35,35),rnd(72,93),rnd(.35,.6));}
   // vignette tối mép -> khối cầu
   const vig=g.createRadialGradient(cx,cy,r*.5,cx,cy,r);
   vig.addColorStop(0,'rgba(0,0,0,0)');vig.addColorStop(1,`hsla(${hue},70%,10%,.6)`);
